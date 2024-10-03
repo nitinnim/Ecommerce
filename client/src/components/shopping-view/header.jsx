@@ -1,6 +1,11 @@
 import { HousePlug, LogOut, Menu, ShoppingCart, UserCog } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { logoutUser } from "@/store/auth-slice";
+import { logoutUser, resetTokenAndCredentials } from "@/store/auth-slice";
 import CartSheetWrapper from "./cart-sheet-wrapper";
 import { fetchCartItems } from "@/store/shop/cart-slice";
 import { Label } from "../ui/label";
@@ -29,15 +34,17 @@ function MenuItem() {
   function hanldeNavigateToShopItems(menuItem) {
     sessionStorage.removeItem("filters");
     const currentFilter =
-      menuItem.id !== "home" && menuItem.id !== "products" && menuItem.id !== "search"
+      menuItem.id !== "home" &&
+      menuItem.id !== "products" &&
+      menuItem.id !== "search"
         ? { category: [menuItem.id] }
         : null;
 
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
 
-    location.pathname.includes('listing') && currentFilter !== null ?
-    setSearchParams(new URLSearchParams(`?category=${menuItem.id}`)) :
-    navigate(menuItem.path);
+    location.pathname.includes("listing") && currentFilter !== null
+      ? setSearchParams(new URLSearchParams(`?category=${menuItem.id}`))
+      : navigate(menuItem.path);
   }
 
   return (
@@ -63,6 +70,12 @@ function HeaderRightContent({ user }) {
   const [cartSheet, setCartSheet] = useState(false);
   const { cart } = useSelector((state) => state.shopCart);
 
+  function handleLogout() {
+    dispatch(resetTokenAndCredentials());
+    sessionStorage.clear();
+    navigate("/auth/login")
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
       <Sheet open={cartSheet} onOpenChange={() => setCartSheet(false)}>
@@ -70,10 +83,15 @@ function HeaderRightContent({ user }) {
           variant="outline"
           size="icon"
           onClick={() => setCartSheet(true)}
-          className='relative'
+          className="relative"
         >
           <ShoppingCart className="w-6 h-6" />
-          <span className="absolute top-[-5px] right-[2px] rounded aspect-square font-bold" size='icon'>{cart?.items?.length || 0}</span>
+          <span
+            className="absolute top-[-5px] right-[2px] rounded aspect-square font-bold"
+            size="icon"
+          >
+            {cart?.items?.length || 0}
+          </span>
         </Button>
 
         <CartSheetWrapper
@@ -99,7 +117,7 @@ function HeaderRightContent({ user }) {
             Account
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => dispatch(logoutUser())}>
+          <DropdownMenuItem onClick={() => handleLogout()}>
             <LogOut className="w-4 h-4 mr-2" />
             Logout
           </DropdownMenuItem>

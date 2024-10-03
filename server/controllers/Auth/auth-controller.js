@@ -49,36 +49,55 @@ const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.json({ 
-          success: false, 
-          message: "User does not exists! Please register first" 
+      return res.json({
+        success: false,
+        message: "User does not exists! Please register first",
       });
     }
-  
+
     const checkPassword = await bcrypt.compare(password, user.password);
-    if(!checkPassword) {
-      return res.json({ 
-          success: false, 
-          message: "Password is incorrect" 
+    if (!checkPassword) {
+      return res.json({
+        success: false,
+        message: "Password is incorrect",
       });
     }
 
     // creating the token
-    const token = jwt.sign({
-        id: user._id, role: user.role, email: user.email, userName: user.userName
-    }, 'CLIENT_SECRET_KEY', {expiresIn: '60m'})
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        email: user.email,
+        userName: user.userName,
+      },
+      "CLIENT_SECRET_KEY",
+      { expiresIn: "60m" }
+    );
 
     // sending token with cookie
-    res.cookie('token', token, {httpOnly: true, secure: false}).json({
-        success: true,
-        message: "Logged in successfully",
-        user: {
-            email: user.email,
-            role: user.role,
-            id: user._id,
-            userName: user.userName,
-        }
-    })
+    // res.cookie('token', token, {httpOnly: true, secure: false}).json({
+    //     success: true,
+    //     message: "Logged in successfully",
+    //     user: {
+    //         email: user.email,
+    //         role: user.role,
+    //         id: user._id,
+    //         userName: user.userName,
+    //     }
+    // })
+
+    res.status(200).json({
+      success: true,
+      message: "Logged in successfully",
+      token,
+      user: {
+        email: user.email,
+        role: user.role,
+        id: user._id,
+        userName: user.userName,
+      },
+    });
   } catch (err) {
     console.log("Error in login - " + err);
     res.status(500).json({
@@ -90,31 +109,52 @@ const loginUser = async (req, res) => {
 
 // logout
 const logoutUser = (req, res) => {
-    res.clearCookie('token').json({
-        success: true,
-        message: "Logged out successfully",
-    })
-}
+  res.clearCookie("token").json({
+    success: true,
+    message: "Logged out successfully",
+  });
+};
 
 // auth-middleware
-const authMiddleware = (req, res, next) => {
-  const token = req.cookies.token;
-  if(!token) return res.status(401).json({
-    success: false,
-    message: "Unauthorised user"
-  })
+// const authMiddleware = (req, res, next) => {
+//   const token = req.cookies.token;
+//   if (!token)
+//     return res.status(401).json({
+//       success: false,
+//       message: "Unauthorised user",
+//     });
 
-  try{
-    const decoded = jwt.verify(token, 'CLIENT_SECRET_KEY');
+//   try {
+//     const decoded = jwt.verify(token, "CLIENT_SECRET_KEY");
+//     req.user = decoded;
+//     next();
+//   } catch (err) {
+//     res.status(401).json({
+//       success: false,
+//       message: "Unauthorised user",
+//     });
+//   }
+// };
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]
+  if (!token)
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorised user",
+    });
+
+  try {
+    const decoded = jwt.verify(token, "CLIENT_SECRET_KEY");
     req.user = decoded;
     next();
-  }catch(err) {
+  } catch (err) {
     res.status(401).json({
       success: false,
-      message: "Unauthorised user"
-    })
+      message: "Unauthorised user",
+    });
   }
-
-}
+};
 
 module.exports = { registerUser, loginUser, logoutUser, authMiddleware };
